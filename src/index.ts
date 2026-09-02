@@ -1,12 +1,11 @@
 import express from "express";
+import homeRoutes from "./routes/homeRoutes";
 
 const app = express();
 const PORT = 3000;
 
-app.get("/", (req, res) => {
-  res.send("Hello World");
-});
+app.use("/", homeRoutes);
 
 app.listen(PORT, () => {
-  console.log(`Sunucu ${PORT} portunda çalışıyor`);
+  console.log(`Server is running on port ${PORT}`);
 });
