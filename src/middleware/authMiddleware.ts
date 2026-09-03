@@ -14,7 +14,7 @@ export const authenticateToken = (
   const token = authHeader && authHeader.split(" ")[1];
 
   if (!token) {
-    return res.sendStatus(401).json({ error: "No token provided" });
+    return res.status(401).json({ error: "No token provided" });
   }
 
   try {
@@ -24,6 +24,6 @@ export const authenticateToken = (
     req.userId = decoded.userId;
     next();
   } catch (error) {
-    return res.sendStatus(403).json({ error: "Invalid or expired token" });
+    return res.status(403).json({ error: "Invalid or expired token" });
   }
 };
