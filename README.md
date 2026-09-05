@@ -1,5 +1,10 @@
 # Habit Tracker Backend
 
+🔗 **Canlı Demo:** https://habit-tracker-backend-yc37.onrender.com
+
+> Not: Ücretsiz planda barındırıldığı için, uzun süre istek almazsa uykuya
+> geçer — ilk istek 30-60 saniye sürebilir.
+
 Kişisel alışkanlık takibi için sıfırdan yazılmış bir REST API. Kullanıcılar
 alışkanlık ekleyebilir, günlük olarak işaretleyebilir, streak (seri) ve
 haftalık istatistiklerini görebilir.
@@ -29,39 +34,46 @@ kurulduğunu öğrenmek amacıyla geliştirildi.
 ## Kurulum
 
 ### Gereksinimler
+
 - Node.js (v18+)
 - Docker
 
 ### Adımlar
 
 1. Repoyu klonla:
+
 ```
    git clone https://github.com/enesaygur/habit-tracker-backend.git
    cd habit-tracker-backend
 ```
 
 2. Bağımlılıkları kur:
+
 ```
    npm install
 ```
 
 3. PostgreSQL'i Docker ile ayağa kaldır:
+
 ```
    docker run --name habit-tracker-db -e POSTGRES_PASSWORD=devpassword -e POSTGRES_DB=habittracker -p 5432:5432 -d postgres
 ```
 
 4. `.env` dosyası oluştur:
+
 ```
    DATABASE_URL="postgresql://postgres:devpassword@localhost:5432/habittracker"
    JWT_SECRET="your-secret-key"
 ```
 
 5. Veritabanı şemasını uygula:
+
 ```
    npx prisma migrate dev
 ```
 
 6. Sunucuyu başlat:
+
 ```
    npm run dev
 ```
@@ -71,21 +83,23 @@ Sunucu `http://localhost:3000` adresinde çalışacaktır.
 ## API Endpoint'leri
 
 ### Auth
-| Method | Endpoint | Açıklama | Korumalı mı |
-|---|---|---|---|
-| POST | `/auth/register` | Yeni kullanıcı kaydı | Hayır |
-| POST | `/auth/login` | Giriş, JWT token döner | Hayır |
-| GET | `/auth/me` | Giriş yapan kullanıcının bilgisi | Evet |
+
+| Method | Endpoint         | Açıklama                         | Korumalı mı |
+| ------ | ---------------- | -------------------------------- | ----------- |
+| POST   | `/auth/register` | Yeni kullanıcı kaydı             | Hayır       |
+| POST   | `/auth/login`    | Giriş, JWT token döner           | Hayır       |
+| GET    | `/auth/me`       | Giriş yapan kullanıcının bilgisi | Evet        |
 
 ### Habits
-| Method | Endpoint | Açıklama | Korumalı mı |
-|---|---|---|---|
-| POST | `/habits` | Yeni alışkanlık oluştur | Evet |
-| GET | `/habits` | Kullanıcının alışkanlıklarını listele | Evet |
-| PUT | `/habits/:id` | Alışkanlığı güncelle | Evet |
-| DELETE | `/habits/:id` | Alışkanlığı sil | Evet |
-| POST | `/habits/:id/log` | Bugün için işaretle | Evet |
-| GET | `/habits/:id/stats` | Haftalık özet ve streak | Evet |
+
+| Method | Endpoint            | Açıklama                              | Korumalı mı |
+| ------ | ------------------- | ------------------------------------- | ----------- |
+| POST   | `/habits`           | Yeni alışkanlık oluştur               | Evet        |
+| GET    | `/habits`           | Kullanıcının alışkanlıklarını listele | Evet        |
+| PUT    | `/habits/:id`       | Alışkanlığı güncelle                  | Evet        |
+| DELETE | `/habits/:id`       | Alışkanlığı sil                       | Evet        |
+| POST   | `/habits/:id/log`   | Bugün için işaretle                   | Evet        |
+| GET    | `/habits/:id/stats` | Haftalık özet ve streak               | Evet        |
 
 Korumalı endpoint'ler için `Authorization: Bearer <token>` header'ı gereklidir.
 
