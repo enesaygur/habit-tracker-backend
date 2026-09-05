@@ -2,7 +2,8 @@ import { NextFunction, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { AuthRequest } from "./../middleware/authMiddleware";
 import { AppError } from "./../middleware/errorHandler";
-import { calculateStreak } from './../utils/streak';
+import { calculateStreak } from "./../utils/streak";
+import { habitSchema } from "../schemas/habitSchema";
 const prisma = new PrismaClient();
 
 export const createHabit = async (
@@ -11,11 +12,13 @@ export const createHabit = async (
   next: NextFunction,
 ) => {
   try {
-    const { name } = req.body;
+    const result = habitSchema.safeParse(req.body);
 
-    if (!name) {
-      throw new AppError("Name is required", 400);
+    if (!result.success) {
+      throw new AppError(result.error.issues[0].message, 400);
     }
+
+    const { name } = result.data;
 
     const habit = await prisma.habit.create({
       data: {
@@ -54,7 +57,13 @@ export const updateHabit = async (
 ) => {
   try {
     const { id } = req.params;
-    const { name } = req.body;
+    const result = habitSchema.safeParse(req.body);
+
+    if (!result.success) {
+      throw new AppError(result.error.issues[0].message, 400);
+    }
+
+    const { name } = result.data;
 
     const habit = await prisma.habit.findUnique({ where: { id: Number(id) } });
 

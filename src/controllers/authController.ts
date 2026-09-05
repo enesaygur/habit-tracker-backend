@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import { AuthRequest } from "../middleware/authMiddleware";
 import { JWT_SECRET } from "../config/env";
 import { AppError } from "../middleware/errorHandler";
+import { loginSchema, registerSchema } from "../schemas/authSchema";
 
 const prisma = new PrismaClient();
 
@@ -14,11 +15,12 @@ export const register = async (
   next: NextFunction,
 ) => {
   try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      throw new AppError("Email and password are required", 400);
+    const result = registerSchema.safeParse(req.body);
+    if (!result.success) {
+      throw new AppError(result.error.issues[0].message, 400);
     }
+
+    const { email, password } = result.data;
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
@@ -46,11 +48,12 @@ export const login = async (
   next: NextFunction,
 ) => {
   try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      throw new AppError("Email and password are required", 400);
+    const result = loginSchema.safeParse(req.body);
+    if (!result.success) {
+      throw new AppError(result.error.issues[0].message, 400);
     }
+
+    const { email, password } = result.data;
 
     const user = await prisma.user.findUnique({ where: { email } });
 
