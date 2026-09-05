@@ -2,41 +2,8 @@ import { NextFunction, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { AuthRequest } from "./../middleware/authMiddleware";
 import { AppError } from "./../middleware/errorHandler";
+import { calculateStreak } from './../utils/streak';
 const prisma = new PrismaClient();
-
-function calculateStreak(dates: Date[]): number {
-  if (dates.length === 0) return 0;
-
-  const sortedDates = dates
-    .map((d) => {
-      const date = new Date(d);
-      date.setHours(0, 0, 0, 0);
-      return date.getTime();
-    })
-    .sort((a, b) => b - a);
-
-  let streak = 1;
-  const oneDayMs = 24 * 60 * 60 * 1000;
-
-  for (let i = 0; i < sortedDates.length - 1; i++) {
-    const diff = sortedDates[i] - sortedDates[i + 1];
-    if (diff === oneDayMs) {
-      streak++;
-    } else {
-      break;
-    }
-  }
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const mostRecentLog = sortedDates[0];
-  const daySinceLastLog = (today.getTime() - mostRecentLog) / oneDayMs;
-
-  if (daySinceLastLog > 1) {
-    return 0;
-  }
-  return streak;
-}
 
 export const createHabit = async (
   req: AuthRequest,
