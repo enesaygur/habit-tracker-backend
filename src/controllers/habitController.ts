@@ -1,7 +1,7 @@
-import { Response } from "express";
+import { NextFunction, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { AuthRequest } from "./../middleware/authMiddleware";
-
+import { AppError } from "./../middleware/errorHandler";
 const prisma = new PrismaClient();
 
 function calculateStreak(dates: Date[]): number {
@@ -38,12 +38,16 @@ function calculateStreak(dates: Date[]): number {
   return streak;
 }
 
-export const createHabit = async (req: AuthRequest, res: Response) => {
+export const createHabit = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { name } = req.body;
 
     if (!name) {
-      return res.status(400).json({ error: "Name is required" });
+      throw new AppError("Name is required", 400);
     }
 
     const habit = await prisma.habit.create({
@@ -55,11 +59,15 @@ export const createHabit = async (req: AuthRequest, res: Response) => {
 
     res.status(201).json(habit);
   } catch (error) {
-    res.status(500).json({ error: "Something went wrong" });
+    next(error);
   }
 };
 
-export const getHabits = async (req: AuthRequest, res: Response) => {
+export const getHabits = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const habits = await prisma.habit.findMany({
       where: { userId: req.userId },
@@ -68,11 +76,15 @@ export const getHabits = async (req: AuthRequest, res: Response) => {
 
     res.status(200).json(habits);
   } catch (error) {
-    res.status(500).json({ error: "Something went wrong" });
+    next(error);
   }
 };
 
-export const updateHabit = async (req: AuthRequest, res: Response) => {
+export const updateHabit = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { id } = req.params;
     const { name } = req.body;
@@ -80,24 +92,28 @@ export const updateHabit = async (req: AuthRequest, res: Response) => {
     const habit = await prisma.habit.findUnique({ where: { id: Number(id) } });
 
     if (!habit) {
-      return res.status(404).json({ error: "Habit not found" });
+      throw new AppError("Habit not found", 404);
     }
 
     if (habit.userId !== req.userId) {
-      return res.status(403).json({ error: "Not allowed" });
+      throw new AppError("Not allowed", 403);
     }
 
-    const updateHabit = await prisma.habit.update({
+    const updatedHabit = await prisma.habit.update({
       where: { id: Number(id) },
       data: { name },
     });
-    res.status(200).json(updateHabit);
+    res.status(200).json(updatedHabit);
   } catch (error) {
-    res.status(500).json({ error: "Something went wrong" });
+    next(error);
   }
 };
 
-export const deleteHabit = async (req: AuthRequest, res: Response) => {
+export const deleteHabit = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { id } = req.params;
     const habit = await prisma.habit.findUnique({
@@ -105,21 +121,25 @@ export const deleteHabit = async (req: AuthRequest, res: Response) => {
     });
 
     if (!habit) {
-      return res.status(404).json({ error: "Habit not found" });
+      throw new AppError("Habit not found", 404);
     }
 
     if (habit.userId !== req.userId) {
-      return res.status(403).json({ error: "Not allowed" });
+      throw new AppError("Not allowed", 403);
     }
 
     await prisma.habit.delete({ where: { id: Number(id) } });
     res.status(204).send();
   } catch (error) {
-    res.status(500).json({ error: "Something went wrong" });
+    next(error);
   }
 };
 
-export const markHabitDone = async (req: AuthRequest, res: Response) => {
+export const markHabitDone = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { id } = req.params;
 
@@ -128,11 +148,11 @@ export const markHabitDone = async (req: AuthRequest, res: Response) => {
     });
 
     if (!habit) {
-      return res.status(404).json({ error: "Habit not found" });
+      throw new AppError("Habit not found", 404);
     }
 
     if (habit.userId !== req.userId) {
-      return res.status(403).json({ error: "Not allowed" });
+      throw new AppError("Not allowed", 403);
     }
 
     const today = new Date();
@@ -147,15 +167,17 @@ export const markHabitDone = async (req: AuthRequest, res: Response) => {
     res.status(201).json(log);
   } catch (error: any) {
     if (error.code === "P2002") {
-      return res
-        .status(409)
-        .json({ error: "Habit already marked as done today" });
+      return next(new AppError("Habit already done today", 409));
     }
-    res.status(500).json({ error: "Something went wrong" });
+    next(error);
   }
 };
 
-export const getHabitStats = async (req: AuthRequest, res: Response) => {
+export const getHabitStats = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { id } = req.params;
 
@@ -164,11 +186,11 @@ export const getHabitStats = async (req: AuthRequest, res: Response) => {
     });
 
     if (!habit) {
-      return res.status(404).json({ error: "Habit not found" });
+      throw new AppError("Habit not found", 404);
     }
 
     if (habit.userId !== req.userId) {
-      return res.status(403).json({ error: "Not allowed" });
+      throw new AppError("Not allowed", 403);
     }
 
     const sevenDayAgo = new Date();
@@ -192,6 +214,6 @@ export const getHabitStats = async (req: AuthRequest, res: Response) => {
       currentStreak: streak,
     });
   } catch (error) {
-    res.status(500).json({ error: "Something went wrong" });
+    next(error);
   }
 };

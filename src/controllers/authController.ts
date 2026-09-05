@@ -1,22 +1,28 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import bcrypt from "bcrypt";
 import { PrismaClient } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import { AuthRequest } from "../middleware/authMiddleware";
+import { JWT_SECRET } from "../config/env";
+import { AppError } from "../middleware/errorHandler";
 
 const prisma = new PrismaClient();
 
-export const register = async (req: Request, res: Response) => {
+export const register = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required" });
+      throw new AppError("Email and password are required", 400);
     }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      return res.status(409).json({ error: "User already exists" });
+      throw new AppError("User already exists", 409);
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -30,35 +36,39 @@ export const register = async (req: Request, res: Response) => {
 
     res.status(201).json({ id: user.id, email: user.email });
   } catch (error) {
-    res.status(500).json({ error: "Something went wrong" });
+    next(error);
   }
 };
 
-export const login = async (req: Request, res: Response) => {
+export const login = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required" });
+      throw new AppError("Email and password are required", 400);
     }
 
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      throw new AppError("Invalid credentials", 401);
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      throw new AppError("Invalid credentials", 401);
     }
 
     const token = jwt.sign(
       {
         userId: user.id,
       },
-      process.env.JWT_SECRET as string,
+      JWT_SECRET,
       {
         expiresIn: "12h",
       },
@@ -66,11 +76,15 @@ export const login = async (req: Request, res: Response) => {
 
     res.status(200).json({ token });
   } catch (error) {
-    res.status(500).json({ error: "Something went wrong" });
+    next(error);
   }
 };
 
-export const getMe = async (req: AuthRequest, res: Response) => {
+export const getMe = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.userId },
@@ -78,11 +92,11 @@ export const getMe = async (req: AuthRequest, res: Response) => {
     });
 
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      throw new AppError("User not found", 404);
     }
 
     res.status(200).json(user);
   } catch (error) {
-    res.status(500).json({ error: "Something went wrong" });
+    next(error);
   }
 };
